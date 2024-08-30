@@ -1,0 +1,35 @@
+{{- if .Values.virtualService.enabled }}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "app.fullname" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  hosts:
+  {{- range .Values.virtualService.allowedHosts }}
+  - {{ . | quote }}
+  {{- end }}
+  gateways:
+  {{- range .Values.virtualService.gateways }}
+  - {{ . | quote }}
+  {{- end }}
+  {{- if .Values.virtualService.http }}
+  http:
+  - timeout: {{ .Values.virtualService.http.timeout }}
+    match:
+    {{- range .Values.virtualService.http.prefixURI }}
+    - uri:
+        prefix: {{ . }}
+    {{- end }}
+    {{- if .Values.virtualService.http.rewriteURI }}
+    rewrite:
+     uri: {{ .Values.virtualService.http.rewriteURI }}
+    {{- end }}
+    route:
+    - destination:
+        port:
+          number: {{ .Values.virtualService.http.destinationPort }}
+        host: {{ include "app.service-name" . }}.{{ include "app.namespace" . }}.svc.cluster.local
+  {{ end }}
+{{- end }}
